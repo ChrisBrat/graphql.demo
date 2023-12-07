@@ -1,0 +1,17 @@
+type Query{
+    customer(id: ID!): Customer
+    customers: [Customer]
+}
+
+
+type Customer{
+    id: ID
+    firstname: String
+    lastName: String
+    telephoneNumbers: [TelephoneNumber]
+}
+
+type TelephoneNumber{
+    id: ID
+    number : String
+}
