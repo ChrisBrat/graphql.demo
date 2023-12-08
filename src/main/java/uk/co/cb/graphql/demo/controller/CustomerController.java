@@ -1,5 +1,7 @@
 package uk.co.cb.graphql.demo.controller;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.BatchMapping;
@@ -8,11 +10,14 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 import uk.co.cb.graphql.demo.entity.CustomerEntity;
 import uk.co.cb.graphql.demo.entity.QCustomerEntity;
-import uk.co.cb.graphql.demo.model.Customer;
+import uk.co.cb.graphql.demo.entity.QTelephoneNumberEntity;
+import uk.co.cb.graphql.demo.entity.TelephoneNumberEntity;
 import uk.co.cb.graphql.demo.model.CreateCustomer;
 import uk.co.cb.graphql.demo.model.CreateTelephoneNumber;
+import uk.co.cb.graphql.demo.model.Customer;
 import uk.co.cb.graphql.demo.model.TelephoneNumber;
 import uk.co.cb.graphql.demo.repository.CustomerRepository;
+import uk.co.cb.graphql.demo.repository.TelephoneNumberRepository;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,7 +25,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Controller
 public class CustomerController {
@@ -28,7 +36,11 @@ public class CustomerController {
     @Autowired
     private CustomerRepository customerRepository;
 
-    public static Map<Long, List<TelephoneNumber>> globalTelephoneNumbers = new HashMap<>();
+    @Autowired
+    private TelephoneNumberRepository telephoneNumberRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @QueryMapping
     public Customer customer(@Argument Long id){
@@ -48,9 +60,8 @@ public class CustomerController {
 
     @QueryMapping
     public Collection<Customer> customers(){
-        List<Customer> result = customerRepository.
-                findAll().
-                stream().
+        List<Customer> result = StreamSupport.stream(customerRepository.
+                findAll().spliterator(),false).
                 map(x ->
                         Customer.
                                 builder().
@@ -64,13 +75,34 @@ public class CustomerController {
 
     @BatchMapping
     public Map<Customer, List<TelephoneNumber>> telephoneNumbers(List<Customer> customers){
-        Map<Customer, List<TelephoneNumber>> results = new HashMap<>();
 
-        for (Customer customer : customers){
-            List<TelephoneNumber> telephoneNumbers = globalTelephoneNumbers.get(customer.getId());
-            results.put(customer,telephoneNumbers);
+        Map<Long, Customer> customerMap = customers.stream().
+                collect(Collectors.toMap(x-> x.getId(), Function.identity()));
+
+        Set<Long> customerIds = customerMap.keySet();
+
+        JPAQueryFactory factory = new JPAQueryFactory(entityManager);
+        QTelephoneNumberEntity qTelephoneNumberEntity = QTelephoneNumberEntity.telephoneNumberEntity;
+        List<TelephoneNumberEntity> telephoneNumberEntitys =
+                factory.query().
+                        select(qTelephoneNumberEntity).
+                        from(qTelephoneNumberEntity).
+                        where(qTelephoneNumberEntity.customer.id.
+                                in(customerIds)).fetch();
+
+        Map<Customer, List<TelephoneNumber>> result = new HashMap<>();
+        for (TelephoneNumberEntity telephoneNumberEntity: telephoneNumberEntitys){
+            Customer customer = customerMap.get(telephoneNumberEntity.getCustomer().getId());
+
+            List<TelephoneNumber> telephoneNumbers = result.getOrDefault(customer, new ArrayList<>());
+            telephoneNumbers.add(TelephoneNumber.builder().
+                            id(telephoneNumberEntity.getId()).
+                            number(telephoneNumberEntity.getNumber()).
+                            build());
+            result.put(customer, telephoneNumbers);
         }
-        return results;
+
+        return result;
     }
 
     @MutationMapping
@@ -92,27 +124,24 @@ public class CustomerController {
                                 build()
                 );
 
-        //addNewCustomerTelephoneNumbers(inputCustomer, customerId);
+        addNewCustomerTelephoneNumbers(createCustomer, customerEntity);
         return result.get();
     }
 
     private void addNewCustomerTelephoneNumbers(CreateCustomer inputCustomer,
-                                                long customerId) {
-        /*List<CreateTelephoneNumber> inputTelephoneNumbers = inputCustomer.getTelephoneNumbers();
+                                                CustomerEntity customerEntity) {
+        List<CreateTelephoneNumber> inputTelephoneNumbers = inputCustomer.getTelephoneNumbers();
         if (inputTelephoneNumbers == null) {
             return;
         }
-        List<TelephoneNumber> telephoneNumbers = globalTelephoneNumbers.
-                getOrDefault(customerId,new ArrayList<>());
-        globalTelephoneNumbers.put(customerId, telephoneNumbers);
 
-        for (int i = 0 ; i < inputTelephoneNumbers.size() ; i++) {
-            TelephoneNumber telephoneNumber = TelephoneNumber.builder().
-                    id(telephoneNumberId++).
-                    number(inputTelephoneNumbers.get(i).
-                            getNumber()).
-                    build();
-            telephoneNumbers.add(telephoneNumber);
-        }*/
+        List<TelephoneNumberEntity> savable = inputTelephoneNumbers.stream().map(x -> {
+                TelephoneNumberEntity telephoneNumberEntity = new TelephoneNumberEntity();
+                telephoneNumberEntity.setNumber(x.getNumber());
+                telephoneNumberEntity.setCustomer(customerEntity);
+                return telephoneNumberEntity;
+        }).collect(Collectors.toList());
+
+        telephoneNumberRepository.saveAll(savable);
     }
 }

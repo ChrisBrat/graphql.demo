@@ -5,5 +5,5 @@ type Query{
 
 type Mutation{
     createCustomer(createCustomer: CreateCustomer!): Customer
-    updateTelephoneNumber(updateCustomer: UpdateTelephoneNumber!) : TelephoneNumber
+    updateTelephoneNumber(updateTelephoneNumber: UpdateTelephoneNumber!) : TelephoneNumber
 }

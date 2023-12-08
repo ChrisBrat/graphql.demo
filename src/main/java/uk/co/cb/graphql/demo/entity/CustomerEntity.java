@@ -23,6 +23,6 @@ public class CustomerEntity {
     private String firstName;
     @Column
     private String lastName;
-    @OneToMany
+    @OneToMany(mappedBy = "customer")
     private List<TelephoneNumberEntity> telephoneNumbers;
 }
