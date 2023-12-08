@@ -1,0 +1,15 @@
+input CreateTelephoneNumber{
+    number : String!
+}
+
+input UpdateTelephoneNumber{
+    id: ID!
+    customerId : ID!
+    number: String!
+}
+
+type TelephoneNumber{
+    id: ID
+    number : String
+}
+

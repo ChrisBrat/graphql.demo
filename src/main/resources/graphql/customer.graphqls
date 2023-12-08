@@ -1,31 +1,12 @@
-type Query{
-    customer(id: ID!): Customer
-    customers: [Customer]
+input CreateCustomer{
+    firstName: String!
+    lastName: String!
+    telephoneNumbers : [CreateTelephoneNumber]
 }
-
-type Mutation{
-    createCustomer(inputCustomer: InputCustomer!): Customer
-}
-
-input InputCustomer{
-    firstName: String
-    lastName: String
-    inputTelephoneNumbers : [InputTelephoneNumber]
-}
-
-input InputTelephoneNumber{
-    number : String
-}
-
 
 type Customer{
     id: ID
     firstName: String
     lastName: String
     telephoneNumbers: [TelephoneNumber]
-}
-
-type TelephoneNumber{
-    id: ID
-    number : String
 }

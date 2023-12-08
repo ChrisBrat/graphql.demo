@@ -1,0 +1,9 @@
+type Query{
+    customer(id: ID!): Customer
+    customers: [Customer]
+}
+
+type Mutation{
+    createCustomer(createCustomer: CreateCustomer!): Customer
+    updateTelephoneNumber(updateCustomer: UpdateTelephoneNumber!) : TelephoneNumber
+}

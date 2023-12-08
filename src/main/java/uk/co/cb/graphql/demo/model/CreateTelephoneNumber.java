@@ -5,6 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class InputTelephoneNumber {
+public class CreateTelephoneNumber {
     private String number;
 }

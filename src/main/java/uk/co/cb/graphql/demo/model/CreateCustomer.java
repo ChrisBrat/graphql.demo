@@ -7,8 +7,8 @@ import java.util.List;
 
 @Getter
 @Setter
-public class InputCustomer {
+public class CreateCustomer {
     private String firstName;
     private String lastName;
-    private List<InputTelephoneNumber> inputTelephoneNumbers;
+    private List<CreateTelephoneNumber> telephoneNumbers;
 }
