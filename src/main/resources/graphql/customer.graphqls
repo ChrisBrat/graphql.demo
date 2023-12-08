@@ -3,10 +3,24 @@ type Query{
     customers: [Customer]
 }
 
+type Mutation{
+    createCustomer(inputCustomer: InputCustomer!): Customer
+}
+
+input InputCustomer{
+    firstName: String
+    lastName: String
+    inputTelephoneNumbers : [InputTelephoneNumber]
+}
+
+input InputTelephoneNumber{
+    number : String
+}
+
 
 type Customer{
     id: ID
-    firstname: String
+    firstName: String
     lastName: String
     telephoneNumbers: [TelephoneNumber]
 }
